@@ -1,0 +1,114 @@
+{
+  "id": "41a7e0c4-4fd4-4f69-a9f4-8a1d341f5d2b",
+  "name": "LAIM Extract Profile — Fixed Train",
+  "description": "Фиксированные календарные границы train для одной пары агент × дистрибутив",
+  "fullDescription": "Формирует параметры закреплённого train-периода: точную пару агент × дистрибутив, календарные даты, часовой пояс и рассчитанные границы в наносекундах. Оператор задаёт только бизнес-параметры. Защитные правила зафиксированы в коде: источник cdio_prod, отбор целых трейсов по окончанию внутри периода, обязательный агентский спан, отсутствие ограничения объёма, единый снимок (snapshot) и дочитывание трейса целиком. Query должен работать в роли monitoring, Gate — с минимумом 1000 трейсов и без немедленного падения на red. В техническом JSON границы записываются как полуинтервал [ts_ns, te_ns), а даты сохраняются для аудита. Повторный запуск сохраняет границы, но перечитывает витрину, поэтому дозагрузка (backfill) может изменить состав trace_id.",
+  "shortNameToDisplay": "Fixed Train",
+  "shape": "data_source",
+  "ports": [
+    {
+      "in": false,
+      "name": "selection",
+      "label": "Параметры train-выборки",
+      "description": "Агент, дистрибутив, даты и точные ns-границы train для LAIM Extract Query",
+      "order": 1,
+      "type": "default"
+    }
+  ],
+  "script": {
+    "type": "python",
+    "baseImageKey": "py312-simple",
+    "deployType": "docker",
+    "runConfiguration": {
+      "sourceFiles": [
+        "main.py",
+        "laim_extract_profiles/__init__.py",
+        "laim_extract_profiles/profile_contract.py",
+        "laim_extract_profiles/fixed_train.py"
+      ],
+      "functionName": "main",
+      "functionParameters": [],
+      "output": {
+        "type": "json",
+        "output": []
+      }
+    }
+  },
+  "ui": {
+    "settings": [
+      {
+        "page": "Train",
+        "title": "Фиксированный train",
+        "components": [
+          {
+            "type": "form",
+            "label": "Точная пара мониторинга",
+            "config": {
+              "components": [
+                {
+                  "parameter": "agent_id",
+                  "label": "CI/CE агента (обязательно)",
+                  "uiComponent": "input",
+                  "type": "string",
+                  "defaultValue": "",
+                  "placeholder": "CI09774440"
+                },
+                {
+                  "parameter": "distributive",
+                  "label": "Точный distributive (обязательно, без шаблонов)",
+                  "uiComponent": "input",
+                  "type": "string",
+                  "defaultValue": "",
+                  "placeholder": "Полное значение из витрины"
+                }
+              ]
+            }
+          },
+          {
+            "type": "form",
+            "label": "Закреплённый календарный период",
+            "config": {
+              "components": [
+                {
+                  "parameter": "train_date_from",
+                  "label": "Первый день train, включительно (ГГГГ-ММ-ДД)",
+                  "uiComponent": "input",
+                  "type": "string",
+                  "defaultValue": "",
+                  "placeholder": "2026-07-01"
+                },
+                {
+                  "parameter": "train_date_to",
+                  "label": "Последний день train, включительно (ГГГГ-ММ-ДД)",
+                  "uiComponent": "input",
+                  "type": "string",
+                  "defaultValue": "",
+                  "placeholder": "2026-07-31"
+                },
+                {
+                  "parameter": "tz",
+                  "label": "Часовой пояс границ периода",
+                  "uiComponent": "select",
+                  "type": "string",
+                  "allowedValues": [
+                    {
+                      "Москва (UTC+3)": "Europe/Moscow"
+                    },
+                    {
+                      "UTC": "UTC"
+                    }
+                  ],
+                  "defaultValue": "Europe/Moscow"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "result": {
+      "title": "Результат",
+      "components": []
+    }
+  }
+}
